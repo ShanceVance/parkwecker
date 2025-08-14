@@ -9,7 +9,7 @@
   <meta name="format-detection" content="telephone=no,email=no,address=no"/>
   <meta name="color-scheme" content="dark light"/>
 
-  <!-- PWA: Manifest & Theme -->
+  <!-- PWA Manifest & Theme -->
   <link rel="manifest" href="manifest.json"/>
   <meta name="theme-color" content="#0f172a"/>
   <meta name="application-name" content="ParkWecker"/>
@@ -176,10 +176,11 @@
     .meta{font-size:13px; color:#e5e7eb80}
     .pill{background:rgba(255,255,255,.06); padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.1); font-size:12px; color:#e5e7eb9c}
 
-    /* Toast & Install */
+    /* Toast + A2HS */
     #toast{position:fixed; top:14px; left:50%; transform:translateX(-50%); display:none; padding:8px 12px; border-radius:999px; background:rgba(17,24,39,.9); border:1px solid rgba(255,255,255,.15); z-index:50}
     #btnA2HS{display:none; position:fixed; left:50%; transform:translateX(-50%); bottom:calc(18px + env(safe-area-inset-bottom)); z-index:30;
       background:linear-gradient(135deg, var(--accent2), var(--accent1)); color:#fff; border:none; border-radius:14px; padding:14px 18px; font-weight:800; box-shadow: var(--shadow); }
+
     @media (max-height: 700px){ .wheel{height:140px}.item{font-size:19px}.btn.small{min-height:52px}.start-grid{gap:8px} }
     @media (max-height: 600px){ .wheel{height:128px}.item{font-size:18px} }
     @media (max-width: 360px){ .item{font-size:18px}.btn{min-height:56px}.wheels{gap:8px} }
@@ -392,7 +393,7 @@ function loadReminder(){ try{ const v=JSON.parse(localStorage.getItem(K_REM)||'5
 function saveReminder(v){ localStorage.setItem(K_REM, JSON.stringify(v)); }
 
 /* UI helpers */
-function toast(msg){ const t=$('#toast'); t.textContent=msg; t.style.display='block'; clearTimeout(toast._t); toast._t=setTimeout(()=>{ t.style.display='none'; }, 1300); }
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.style.display='block'; clearTimeout(toast._t); toast._t=setTimeout(()=>{ t.style.display='none'; }, 1400); }
 function vib(p){ if(!cfg.vibrate) return; if(navigator.vibrate) navigator.vibrate(p); }
 
 /* Timer ring */
@@ -416,7 +417,7 @@ function playModern(preview=false){ if(!cfg.sound||!AC())return; const ctx=new A
   setTimeout(()=>ctx.close(), reps*1.3*1000+200);
 }
 function playMelody(preview=false){ if(!cfg.sound||!AC())return; const ctx=new AC();
-  [261,294,330,392].forEach((f,i)=>tone(ctx,{freq:f,start:i*0.42,dur:0.4,type:'triangle',attack:0.02,release:0.1,gain:0.18}));
+  [261,294,330,392].forEach((f,i)=>tone(ctx,{freq:f,start=i*0.42,dur:0.4,type:'triangle',attack:0.02,release:0.1,gain:0.18}));
   setTimeout(()=>ctx.close(), 4*0.42*1000+200);
 }
 function playSelected(preview=false){ ({1:playBell,2:playModern,3:playMelody}[cfg.alarmType]||playModern)(preview); }
@@ -588,8 +589,27 @@ window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferredP
 a2hsBtn.addEventListener('click',async()=>{ if(!deferredPrompt) return; a2hsBtn.style.display='none'; deferredPrompt.prompt(); try{ const c=await deferredPrompt.userChoice; toast(c.outcome==='accepted'?'Installiert':'Installation abgebrochen'); }catch(_){} deferredPrompt=null; });
 window.addEventListener('appinstalled',()=>{ toast('ParkWecker installiert'); a2hsBtn.style.display='none'; deferredPrompt=null; });
 
-/* Service Worker (dein service-worker.js) */
-window.addEventListener('load',()=>{ if('serviceWorker' in navigator){ navigator.serviceWorker.register('./service-worker.js').catch(()=>{}); }});
+/* Service Worker – robust: versucht beide Dateinamen */
+async function registerSW(){
+  if(!('serviceWorker' in navigator)) return;
+  const tryReg = async (path) => {
+    try{
+      const reg = await navigator.serviceWorker.register(path);
+      console.log('[SW] registriert:', path, reg);
+      toast('Service Worker aktiv');
+      return reg;
+    }catch(err){
+      console.warn('[SW] Registrierung fehlgeschlagen für', path, err);
+      return null;
+    }
+  };
+  let reg = await tryReg('./service-worker.js');
+  if(!reg) reg = await tryReg('./service.worker.js'); // Fallback auf deinen Dateinamen
+  if(!reg){
+    toast('SW nicht aktiv (siehe Konsole)');
+  }
+}
+window.addEventListener('load',registerSW,{once:true});
 
 /* Boot */
 function boot(){
