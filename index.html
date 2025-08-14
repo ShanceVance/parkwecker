@@ -4,41 +4,31 @@
   <meta charset="utf-8"/>
   <title>ParkWecker – Parkschein-Timer</title>
 
-  <!-- Viewport & Safe Areas -->
+  <!-- Viewport & PWA Meta -->
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
   <meta name="format-detection" content="telephone=no,email=no,address=no"/>
   <meta name="color-scheme" content="dark light"/>
-
-  <!-- PWA Manifest & Theme -->
   <link rel="manifest" href="manifest.json"/>
   <meta name="theme-color" content="#0f172a"/>
   <meta name="application-name" content="ParkWecker"/>
   <meta name="description" content="Parkzeit wählen oder per Scroll-Picker einstellen, Foto/Standort sichern – rechtzeitig erinnert. Offline & installierbar."/>
 
-  <!-- Icons / Favicon -->
+  <!-- Icons -->
   <link rel="icon" sizes="192x192" href="icon-192.png" type="image/png"/>
   <link rel="icon" sizes="512x512" href="icon-512.png" type="image/png"/>
-  <link rel="shortcut icon" href="icon-192.png"/>
+  <link rel="apple-touch-icon" href="icon-192.png"/>
 
   <!-- iOS PWA -->
   <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-title" content="ParkWecker"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-  <link rel="apple-touch-icon" href="icon-192.png"/>
-
-  <!-- Social -->
-  <meta property="og:title" content="ParkWecker – Parkschein-Timer"/>
-  <meta property="og:description" content="Parkzeit wählen oder per Scroll-Picker einstellen, Foto/Standort sichern – rechtzeitig erinnert. Offline & installierbar."/>
-  <meta property="og:type" content="website"/>
-  <meta property="og:image" content="icon-512.png"/>
-  <meta property="og:url" content="./"/>
+  <meta name="apple-mobile-web-app-title" content="ParkWecker"/>
 
   <style>
     :root{
       --bg1:#0f172a; --bg2:#111827;
       --accent1:#7c3aed; --accent2:#06b6d4;
       --warn:#f59e0b; --danger:#ef4444;
-      --surface:rgba(255,255,255,.06); --surface-strong:rgba(255,255,255,.12);
+      --surface:rgba(255,255,255,.06); --surface2:rgba(255,255,255,.1);
       --text:#e5e7eb; --muted:#cbd5e1;
       --glass: blur(14px) saturate(120%);
       --shadow:0 18px 45px rgba(0,0,0,.45);
@@ -67,6 +57,13 @@
     header{display:flex; align-items:center; justify-content:space-between;}
     .brand{display:flex; gap:10px; align-items:center; font-weight:800; cursor:pointer}
     h1{font-size:18px; margin:0}
+    .icon-btn{
+      border:none; background:var(--surface); border:1px solid rgba(255,255,255,.08);
+      width:44px; height:44px; border-radius:14px; display:grid; place-items:center;
+      box-shadow:var(--shadow); backdrop-filter: var(--glass);
+      transition: transform .12s ease, box-shadow .25s ease, background .25s ease;
+    }
+    .icon-btn:active{ transform:scale(.98) }
 
     /* App-Icon (CSS/SVG) */
     .pw-icon{--size: 30px; --radius: 30%; width:var(--size); height:var(--size);
@@ -78,19 +75,12 @@
     .pw-icon::after{content:""; position:absolute; inset:0; border-radius:inherit; box-shadow: inset 0 0 0 1px rgba(255,255,255,.14);}
     .pw-symbol{ width:70%; height:70%; filter: drop-shadow(0 2px 6px rgba(0,0,0,.25)); }
 
-    /* Icon buttons */
-    .icon-btn{
-      border:none; background:var(--surface); border:1px solid rgba(255,255,255,.08);
-      width:44px; height:44px; border-radius:14px; display:grid; place-items:center;
-      box-shadow:var(--shadow); backdrop-filter: var(--glass);
-      transition: transform .12s ease, box-shadow .25s ease, background .25s ease;
-    }
-    .icon-btn:active{ transform:scale(.98) }
+    /* Screens */
     .screen{display:none; animation:fade .24s ease-out}
     .screen.active{display:block}
     @keyframes fade{from{opacity:.0; transform:translateY(6px)} to{opacity:1; transform:translateY(0)}}
 
-    /* EIN großer Container */
+    /* Haupt-Card (eine Box) */
     .card{
       background: var(--surface); border:1px solid rgba(255,255,255,.08);
       border-radius: var(--r); box-shadow: var(--shadow);
@@ -115,8 +105,6 @@
     .btn.warn{background:linear-gradient(135deg, var(--warn), #fbbf24); color:#111}
     .btn.danger{background:linear-gradient(135deg, var(--danger), #f87171);}
     .btn.small{min-height:56px; padding:14px; border-radius:14px}
-
-    /* Start-Buttons */
     .start-grid{display:grid; grid-template-columns:1fr; gap:10px; margin-top:2px}
     @media(min-width:420px){ .start-grid{grid-template-columns:repeat(3,1fr)} }
 
@@ -139,14 +127,14 @@
     .wheel::before{ top: calc(50% - 24px); } .wheel::after{ top: calc(50% + 24px); }
     .wheel.single{ grid-column:1/-1; }
 
-    /* Timer */
+    /* Timer-Kreis */
     .timer-wrap{display:grid; gap:12px}
     .ring{ position:relative; width:100%; max-width:520px; margin:0 auto; aspect-ratio:1/1; display:grid; place-items:center; filter: drop-shadow(0 18px 45px rgba(0,0,0,.45)); }
     .ring svg{width:100%; height:100%}
     .ring .time{ position:absolute; width:100%; text-align:center; z-index:2; font-variant-numeric: tabular-nums; letter-spacing:.6px; top:50%; left:50%; transform:translate(-50%,-50%); }
     .time .big{font-size:44px; font-weight:800}
 
-    /* Photo */
+    /* Foto */
     .photo-wrap{ position:relative; border-radius:18px; overflow:hidden; background:#0b0b0b; aspect-ratio:16/9; display:none; place-items:center;
       border:1px solid rgba(255,255,255,.12); box-shadow: var(--shadow); backdrop-filter:var(--glass); margin-top:4px; }
     .photo-wrap img,.photo-wrap video,.photo-wrap canvas{width:100%; height:100%; object-fit:cover}
@@ -154,7 +142,7 @@
     .photo-wrap:hover .tap-overlay{opacity:1}
     .chip{ background:rgba(0,0,0,.5); color:#fff; border:none; border-radius:12px; padding:10px 12px; min-height:44px; min-width:44px; font-size:15px; border:1px solid rgba(255,255,255,.14); backdrop-filter: blur(8px); }
 
-    /* Overlay */
+    /* Overlays */
     .overlay{position:fixed; inset:0; background:rgba(10,10,10,.6); display:none; align-items:center; justify-content:center; padding:14px; z-index:20}
     .overlay.show{display:flex}
     .modal{ width:100%; max-width:520px; background:var(--surface); border-radius:20px; box-shadow: var(--shadow);
@@ -162,11 +150,7 @@
     .modal h3{margin:6px 0 4px}
     .modal p{margin:0 0 10px; color:var(--muted)}
 
-    /* Settings */
-    .settings-group{ text-align:left; display:grid; gap:10px; margin:10px 0 }
-    .alarm-row{ display:grid; grid-template-columns:1fr auto auto; gap:10px; align-items:center; }
-
-    /* History */
+    /* Verlauf */
     .history{display:grid; gap:8px}
     .row{ display:grid; grid-template-columns:auto 1fr auto; gap:10px; align-items:center; padding:8px;
       border-radius:12px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); backdrop-filter:var(--glass) }
@@ -174,12 +158,10 @@
     .meta{font-size:13px; color:#e5e7eb80}
     .pill{background:rgba(255,255,255,.06); padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.1); font-size:12px; color:#e5e7eb9c}
 
+    /* Toast & A2HS */
     #toast{position:fixed; top:14px; left:50%; transform:translateX(-50%); display:none; padding:8px 12px; border-radius:999px; background:rgba(17,24,39,.9); border:1px solid rgba(255,255,255,.15); z-index:50}
     #btnA2HS{display:none; position:fixed; left:50%; transform:translateX(-50%); bottom:calc(18px + env(safe-area-inset-bottom)); z-index:30;
       background:linear-gradient(135deg, var(--accent2), var(--accent1)); color:#fff; border:none; border-radius:14px; padding:14px 18px; font-weight:800; box-shadow: var(--shadow); }
-
-    /* Spinner */
-    @keyframes rspin{to{transform:rotate(360deg)}}
 
     @media (max-height: 700px){ .wheel{height:140px}.item{font-size:19px}.btn.small{min-height:52px}.start-grid{gap:8px} }
     @media (max-height: 600px){ .wheel{height:128px}.item{font-size:18px} }
@@ -355,7 +337,6 @@
     </div>
   </div>
 
-  <!-- Toast + A2HS -->
   <div class="card" id="toast">OK</div>
   <button id="btnA2HS">Zum Startbildschirm hinzufügen</button>
 </div>
@@ -364,23 +345,29 @@
 (function(){
 'use strict';
 
-var $=function(s){return document.querySelector(s)}, $$=function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
+/* ===== Helpers ===== */
+var $=function(s){return document.querySelector(s)};
+var $$=function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
 var NOW=function(){return Date.now()};
+function safeBind(sel,evt,fn){ var el=$(sel); if(el){ try{ el.addEventListener(evt,fn); }catch(_){ } } return !!el; }
+function toast(msg){ var t=$('#toast'); t.textContent=msg; t.style.display='block'; clearTimeout(toast._t); toast._t=setTimeout(function(){ t.style.display='none'; }, 1400); }
+function vib(p){ if(!cfg.vibrate) return; if(navigator.vibrate) navigator.vibrate(p); }
+function isSecure(){ return (location.protocol==='https:' || location.hostname==='localhost' || location.hostname==='127.0.0.1'); }
 
-/* Storage Keys */
-var K_STATE='pw_state_v11';
-var K_HIST ='pw_hist_v11';
-var K_CFG  ='pw_cfg_v11';
-var K_REM  ='pw_reminder_v3';
+/* ===== Storage Keys ===== */
+var K_STATE='pw_state_v12';
+var K_HIST ='pw_hist_v12';
+var K_CFG  ='pw_cfg_v12';
+var K_REM  ='pw_reminder_v4';
 
-/* State */
+/* ===== State ===== */
 var cfg = loadCfg();
 var st  = loadState();
 var tick=null; var reminderMin = loadReminder(); var reminderFired=false;
-var stream=null; var photoWaitActive=false; var flowLock=false;
+var camStream=null; var photoWaitActive=false; var flowLock=false;
 var alarmLoopInt=null;
 
-/* Storage */
+/* ===== Storage ===== */
 function defState(){ return {running:false,start:0,end:0,photo:null,loc:null}; }
 function loadState(){ try{ return JSON.parse(localStorage.getItem(K_STATE)) || defState(); }catch(e){return defState();} }
 function saveState(){ localStorage.setItem(K_STATE, JSON.stringify(st)); }
@@ -391,21 +378,11 @@ function saveHist(a){ localStorage.setItem(K_HIST, JSON.stringify(a.slice(0,3)))
 function loadReminder(){ try{ var v=JSON.parse(localStorage.getItem(K_REM)||'5'); return [0,5,10,15,20,25].indexOf(v)>-1?v:5; }catch(e){return 5} }
 function saveReminder(v){ localStorage.setItem(K_REM, JSON.stringify(v)); }
 
-/* UI helpers */
-function toast(msg){ var t=$('#toast'); t.textContent=msg; t.style.display='block'; clearTimeout(toast._t); toast._t=setTimeout(function(){ t.style.display='none'; }, 1400); }
-function vib(p){ if(!cfg.vibrate) return; if(navigator.vibrate) navigator.vibrate(p); }
-function spinner(txt){
-  return '<svg viewBox="0 0 50 50" style="width:18px;height:18px;animation:rspin .8s linear infinite;vertical-align:-3px">'
-       + '<circle cx="25" cy="25" r="20" stroke="rgba(255,255,255,.3)" stroke-width="6" fill="none"></circle>'
-       + '<path d="M45 25a20 20 0 0 1-20 20" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round"></path>'
-       + '</svg> ' + txt;
-}
+/* ===== Timer Ring ===== */
+var circ = 2 * Math.PI * 52; var $progress;
+function setRingProgress(percent){ if(!$progress) $progress=$('#progress'); if(!$progress) return; var off=circ*(1-percent); $progress.style.strokeDasharray=String(circ); $progress.style.strokeDashoffset=String(off); }
 
-/* Timer ring */
-var circ = 2 * Math.PI * 52; var $progress = $('#progress');
-function setRingProgress(percent){ var off=circ*(1-percent); $progress.style.strokeDasharray=String(circ); $progress.style.strokeDashoffset=String(off); }
-
-/* WebAudio alarms */
+/* ===== WebAudio Alarme ===== */
 function AC(){ return window.AudioContext||window.webkitAudioContext; }
 function tone(ctx,o){ var freq=o.freq||440, start=o.start||0, dur=o.dur||0.4, type=o.type||'sine', attack=o.attack||0.02, release=o.release||0.15, gain=o.gain||0.15;
   var osc=ctx.createOscillator(); var g=ctx.createGain(); osc.type=type; osc.frequency.value=freq; g.gain.value=0.0001;
@@ -429,44 +406,46 @@ function playSelected(preview){ ({1:playBell,2:playModern,3:playMelody}[cfg.alar
 function startAlarmLoop(){ stopAlarmLoop(); playSelected(false); var d=cfg.alarmType===1?2600:cfg.alarmType===2?3900:1800; alarmLoopInt=setInterval(function(){playSelected(false);},d); }
 function stopAlarmLoop(){ if(alarmLoopInt){clearInterval(alarmLoopInt); alarmLoopInt=null;} }
 
-/* Camera */
-function isSecure(){
-  // Sichere Kontexte: HTTPS oder localhost
-  return (location.protocol==='https:' || location.hostname==='localhost' || location.hostname==='127.0.0.1');
-}
+/* ===== Kamera mit Fallback ===== */
+function stopCam(){ if(camStream){ try{ camStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} camStream=null; } var v=$('#video'); if(v){ v.style.display='none'; } var skip=$('#btnSkipPhoto'); if(skip){ skip.style.display='none'; } }
 async function startCam(){
   stopCam();
   if(!isSecure() || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    $('#camLabel').textContent='Foto hochladen'; $('#fileInput').click(); return;
+    var cam=$('#camLabel'); if(cam) cam.textContent='Foto hochladen';
+    var fi=$('#fileInput'); if(fi) fi.click();
+    return;
   }
   try{
-    $('#camLabel').innerHTML=spinner('Öffne…');
-    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
-    var v=$('#video'); v.srcObject=stream; v.style.display='block'; $('#photo').style.display='none';
+    var cam2=$('#camLabel'); if(cam2) cam2.textContent='Öffne…';
+    camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+    var v=$('#video'); if(!v) return; v.srcObject=camStream; v.style.display='block'; var img=$('#photo'); if(img) img.style.display='none';
     await new Promise(function(r){ if(v.readyState>=2) r(); else v.onloadedmetadata=function(){r();}; });
-    $('#camLabel').textContent='Aufnehmen'; $('#btnSkipPhoto').style.display='inline-block';
-  }catch(e){ $('#camLabel').textContent='Foto hochladen'; $('#fileInput').click(); }
+    if(cam2) cam2.textContent='Aufnehmen'; var sk=$('#btnSkipPhoto'); if(sk) sk.style.display='inline-block';
+  }catch(e){
+    var cam3=$('#camLabel'); if(cam3) cam3.textContent='Foto hochladen';
+    var fi2=$('#fileInput'); if(fi2) fi2.click();
+  }
 }
-function stopCam(){ if(stream){ try{ stream.getTracks().forEach(function(t){t.stop();}); }catch(e){} stream=null; } $('#video').style.display='none'; $('#btnSkipPhoto').style.display='none'; }
 async function capturePhoto(){
-  var v=$('#video'); if(!v.srcObject){ await startCam(); return; }
+  var v=$('#video'); if(!v || !v.srcObject){ await startCam(); return; }
   if(v.videoWidth===0||v.videoHeight===0){ await new Promise(function(r){ var to=setTimeout(r,400); v.onloadeddata=function(){clearTimeout(to); r();}; }); }
-  $('#camLabel').innerHTML=spinner('Speichere…'); await new Promise(function(r){ requestAnimationFrame(r); });
+  var cam=$('#camLabel'); if(cam) cam.textContent='Speichere…';
+  await new Promise(function(r){ requestAnimationFrame(r); });
   var c=$('#canvas'), x=c.getContext('2d'); c.width=v.videoWidth||1280; c.height=v.videoHeight||720; x.drawImage(v,0,0,c.width,c.height);
   try{ st.photo=c.toDataURL('image/jpeg',0.9); saveState(); renderPhoto(); toast('Foto gespeichert'); vib(30); }
   catch(_){ toast('Konnte Foto nicht speichern'); }
-  finally{ $('#camLabel').textContent='Aufnehmen'; stopCam(); }
+  finally{ if(cam) cam.textContent='Aufnehmen'; stopCam(); }
   if(photoWaitActive) document.dispatchEvent(new CustomEvent('photo-decision',{detail:{status:'saved'}}));
 }
-$('#fileInput').addEventListener('change',function(e){
+safeBind('#fileInput','change',function(e){
   var f=e.target.files && e.target.files[0]; if(!f) return;
   var r=new FileReader(); r.onload=function(){ st.photo=String(r.result); saveState(); renderPhoto(); toast('Foto gespeichert'); vib(30);
     if(photoWaitActive) document.dispatchEvent(new CustomEvent('photo-decision',{detail:{status:'saved'}})); };
   r.readAsDataURL(f);
 });
-function renderPhoto(){ if(st.photo){ $('#photo').src=st.photo; $('#photoWrap').style.display='block'; $('#btnRetake').style.display='inline-block'; } else { $('#photoWrap').style.display='none'; $('#btnRetake').style.display='none'; } }
+function renderPhoto(){ var wrap=$('#photoWrap'); if(!wrap) return; if(st.photo){ var p=$('#photo'); if(p){ p.src=st.photo; } wrap.style.display='block'; var rt=$('#btnRetake'); if(rt) rt.style.display='inline-block'; } else { wrap.style.display='none'; var rt2=$('#btnRetake'); if(rt2) rt2.style.display='none'; } }
 
-/* Geo */
+/* ===== Geolocation ===== */
 async function askGeo(){
   if(!('geolocation' in navigator)){ toast('GPS nicht verfügbar'); return false; }
   try{
@@ -474,17 +453,17 @@ async function askGeo(){
     st.loc={lat:pos.coords.latitude, lon:pos.coords.longitude, acc:pos.coords.accuracy}; saveState(); toast('Standort gespeichert'); vib(20); return true;
   }catch(_){ toast('GPS abgelehnt'); return false; }
 }
-function showMapBtn(){ if(st.loc){ $('#btnShowMap').style.display='inline-block'; $('#btnShare').style.display='inline-block'; } else { $('#btnShowMap').style.display='none'; $('#btnShare').style.display='none'; } }
+function showMapBtn(){ var sM=$('#btnShowMap'), sh=$('#btnShare'); if(st.loc){ if(sM)sM.style.display='inline-block'; if(sh)sh.style.display='inline-block'; } else { if(sM)sM.style.display='none'; if(sh)sh.style.display='none'; } }
 
-/* Prompts */
+/* ===== Prompts ===== */
 function showPrompt(title,text){
   if(photoWaitActive) return Promise.resolve(false);
-  $('#promptTitle').textContent=title; $('#promptText').textContent=text; $('#promptOverlay').classList.add('show');
+  var ov=$('#promptOverlay'); if(!ov) return Promise.resolve(false);
+  $('#promptTitle').textContent=title; $('#promptText').textContent=text; ov.classList.add('show');
   return new Promise(function(res){
-    var onYes=function(){ cleanup(); res(true); };
-    var onNo =function(){ cleanup(); res(false); };
-    $('#promptYes').onclick=onYes; $('#promptNo').onclick=onNo;
-    function cleanup(){ $('#promptYes').onclick=null; $('#promptNo').onclick=null; $('#promptOverlay').classList.remove('show'); }
+    var yes=function(){ clean(); res(true); }, no=function(){ clean(); res(false); };
+    $('#promptYes').onclick=yes; $('#promptNo').onclick=no;
+    function clean(){ var y=$('#promptYes'), n=$('#promptNo'); if(y) y.onclick=null; if(n) n.onclick=null; ov.classList.remove('show'); }
   });
 }
 function waitForPhotoDecision(){
@@ -492,13 +471,13 @@ function waitForPhotoDecision(){
   return new Promise(function(res){
     var onDecision=function(e){ cleanup(); res((e.detail && e.detail.status) || 'skipped'); };
     var onSkip=function(){ stopCam(); st.photo=null; saveState(); renderPhoto(); cleanup(); res('skipped'); };
-    function cleanup(){ photoWaitActive=false; document.removeEventListener('photo-decision',onDecision); $('#btnSkipPhoto').onclick=null; $('#btnSkipPhoto').style.display='none'; }
+    function cleanup(){ photoWaitActive=false; document.removeEventListener('photo-decision',onDecision); var sk=$('#btnSkipPhoto'); if(sk) sk.onclick=null; if(sk) sk.style.display='none'; }
     document.addEventListener('photo-decision',onDecision,{once:true});
-    $('#btnSkipPhoto').onclick=onSkip;
+    var sk=$('#btnSkipPhoto'); if(sk) sk.onclick=onSkip;
   });
 }
 
-/* Timer */
+/* ===== Timer ===== */
 function startTimer(minutes){
   var now=NOW(); st.start=now; st.end=now+minutes*60000; st.running=true; reminderFired=false;
   saveState(); runTick(); renderTimerUI(); toast('Timer gestartet'); vib(40);
@@ -516,31 +495,34 @@ function fmt(ms){ if(ms<0)ms=0; var s=Math.floor(ms/1000); var hh=String(Math.fl
 function updateCountdown(){
   if(!st.running) return;
   var total=st.end-st.start, left=st.end-NOW(), leftPos=Math.max(left,0), pct=Math.min(Math.max(leftPos/Math.max(total,1),0),1);
-  setRingProgress(pct); $('#countdown').textContent=fmt(left);
+  setRingProgress(pct); var c=$('#countdown'); if(c) c.textContent=fmt(left);
   var remMs = Math.max(0, reminderMin)*60000;
   if(remMs>0 && !reminderFired && left>0 && left<=remMs){
     reminderFired=true; playSelected(true); vib([200,100,200,100,200]); toast('Noch '+reminderMin+' Minuten.');
   }
   if(left<=0) onTimerEnd();
 }
-
-/* End */
 function onTimerEnd(){
   if(!st.running) return;
   startAlarmLoop(); vib([400,150,400,150,400,150,600]);
   clearInterval(tick); tick=null;
-  if(st.photo){ $('#endPhoto').src=st.photo; $('#endPhotoWrap').style.display='block'; } else { $('#endPhotoWrap').style.display='none'; }
-  var m=$('#endMapWrap'); m.innerHTML=''; if(st.loc){ var a=document.createElement('a'); a.href='https://maps.google.com/?q='+st.loc.lat+','+st.loc.lon; a.target='_blank'; a.rel='noopener'; a.textContent='Google Maps öffnen'; a.style.color='#93c5fd'; m.appendChild(a); }
-  $('#endOverlay').classList.add('show');
+  if(st.photo){ var ep=$('#endPhoto'); if(ep) ep.src=st.photo; var epw=$('#endPhotoWrap'); if(epw) epw.style.display='block'; } else { var epw2=$('#endPhotoWrap'); if(epw2) epw2.style.display='none'; }
+  var m=$('#endMapWrap'); if(m){ m.innerHTML=''; if(st.loc){ var a=document.createElement('a'); a.href='https://maps.google.com/?q='+st.loc.lat+','+st.loc.lon; a.target='_blank'; a.rel='noopener'; a.textContent='Google Maps öffnen'; a.style.color='#93c5fd'; m.appendChild(a); } }
+  var ov=$('#endOverlay'); if(ov) ov.classList.add('show');
   var h=loadHist(); h.unshift({start:st.start,end:NOW(),plannedEnd:st.end,photo:st.photo,loc:st.loc}); saveHist(h);
   st=defState(); saveState();
 }
 
-/* Render & Nav */
-function renderTimerUI(){ if(st.photo){ $('#photoWrap').style.display='block'; $('#photo').src=st.photo; } else { $('#photoWrap').style.display='none'; } showMapBtn(); if(st.running){ nav('#screenTimer'); runTick(); } else { $('#countdown').textContent='00:00:00'; setRingProgress(0); } }
-function nav(id){ $$('.screen').forEach(function(s){s.classList.remove('active');}); $(id).classList.add('active'); }
+/* ===== Render & Navigation ===== */
+function renderTimerUI(){
+  var wrap=$('#photoWrap'); if(st.photo && wrap){ wrap.style.display='block'; var p=$('#photo'); if(p) p.src=st.photo; } else if(wrap){ wrap.style.display='none'; }
+  showMapBtn();
+  if(st.running){ nav('#screenTimer'); runTick(); } else { var c=$('#countdown'); if(c) c.textContent='00:00:00'; setRingProgress(0); }
+}
+function nav(id){ $$('.screen').forEach(function(s){ s.classList.remove('active'); }); var t=$(id); if(t) t.classList.add('active'); }
 
-/* Share & Map */
+/* ===== Share & Map ===== */
+function openMap(){ if(!st.loc){ toast('Kein Standort'); return; } window.open('https://maps.google.com/?q='+st.loc.lat+','+st.loc.lon,'_blank'); }
 async function share(){
   if(!st.loc){ toast('Kein Standort gespeichert'); return; }
   var lines=['Parkplatz – geteilt mit ParkWecker','Karte: https://maps.google.com/?q='+st.loc.lat+','+st.loc.lon];
@@ -552,12 +534,12 @@ async function share(){
   if(navigator.share){ try{ await navigator.share({title:'Parkplatz', text:text}); toast('Geteilt'); return; }catch(_){}
   try{ await navigator.clipboard.writeText(text); toast('Link kopiert'); }catch(_){ alert(text); }
 }
-function openMap(){ if(!st.loc){ toast('Kein Standort'); return; } window.open('https://maps.google.com/?q='+st.loc.lat+','+st.loc.lon,'_blank'); }
 function dataURLtoBlob(u){ var sp=u.split(','), m=sp[0], d=sp[1]; var mime=m.match(/:(.*?);/)[1]; var bin=atob(d); var arr=new Uint8Array(bin.length); for(var i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i); return new Blob([arr],{type:mime}); }
 
-/* History */
+/* ===== History ===== */
 function renderHistory(){
-  var data=loadHist(); var list=$('#historyList'); var none=$('#historyNone'); list.innerHTML=''; none.style.display=data.length?'none':'block';
+  var data=loadHist(); var list=$('#historyList'); var none=$('#historyNone'); if(!list||!none) return;
+  list.innerHTML=''; none.style.display=data.length?'none':'block';
   data.slice(0,3).forEach(function(item){
     var row=document.createElement('div'); row.className='row';
     var img=document.createElement('img'); img.className='thumb'; img.alt='Foto'; img.src=item.photo || placeholder();
@@ -571,130 +553,126 @@ function renderHistory(){
 }
 function placeholder(){ var c=document.createElement('canvas'); c.width=112;c.height=80; var x=c.getContext('2d'); x.fillStyle='#0b0b0b'; x.fillRect(0,0,c.width,c.height); x.strokeStyle='rgba(255,255,255,.6)'; x.lineWidth=2; x.strokeRect(10,10,92,60); x.beginPath(); x.moveTo(20,55); x.lineTo(45,35); x.lineTo(65,48); x.lineTo(82,30); x.stroke(); return c.toDataURL('image/png'); }
 
-/* Wheels */
-var ITEM_H=48; var hours, mins, remVals;
-function ensureVpHeight(vp){ if(vp.clientHeight===0){ var p=vp.closest('.wheel'); if(p) p.style.height='160px'; } }
+/* ===== Scroll-Picker ===== */
+var ITEM_H=48; var hours=[], mins=[], remVals=[0,5,10,15,20,25];
 function buildWheel(vp, values, initialIndex){
+  if(!vp) return;
   if(initialIndex===undefined) initialIndex=0;
-  ensureVpHeight(vp); var half=Math.max(1,Math.floor(vp.clientHeight/ITEM_H/2)); var pad=half*ITEM_H;
-  vp.innerHTML=''; var padTop=document.createElement('div'); padTop.style.height=pad+'px'; var padBot=document.createElement('div'); padBot.style.height=pad+'px';
+  var parent=vp.closest('.wheel'); if(parent && parent.clientHeight===0) parent.style.height='160px';
+  var half=Math.max(1,Math.floor((vp.clientHeight||160)/ITEM_H/2)); var pad=half*ITEM_H;
+  vp.innerHTML='';
+  var padTop=document.createElement('div'); padTop.style.height=pad+'px';
+  var padBot=document.createElement('div'); padBot.style.height=pad+'px';
   var frag=document.createDocumentFragment(); frag.appendChild(padTop);
-  values.forEach(function(v){ var d=document.createElement('div'); d.className='item'; d.textContent=String(v); frag.appendChild(d); });
+  for(var i=0;i<values.length;i++){ var d=document.createElement('div'); d.className='item'; d.textContent=String(values[i]); frag.appendChild(d); }
   frag.appendChild(padBot); vp.appendChild(frag);
-  requestAnimationFrame(function(){ snapToIndex(vp,initialIndex,false); });
+  setTimeout(function(){ snapToIndex(vp,initialIndex,false); },0);
   var snapLater=function(){ setTimeout(function(){ snapToNearest(vp); },80); };
   vp.addEventListener('scroll',function(){ highlight(vp); });
   vp.addEventListener('touchend',snapLater); vp.addEventListener('mouseup',snapLater); vp.addEventListener('wheel',snapLater,{passive:true});
   highlight(vp);
 }
-function currentIndex(vp){ var half=Math.max(1,Math.floor(vp.clientHeight/ITEM_H/2)); var firstTop=half*ITEM_H; var center=vp.scrollTop+vp.clientHeight/2; var rel=center-firstTop-ITEM_H/2; return Math.max(0,Math.round(rel/ITEM_H)); }
+function currentIndex(vp){ var half=Math.max(1,Math.floor((vp.clientHeight||160)/ITEM_H/2)); var firstTop=half*ITEM_H; var center=vp.scrollTop+vp.clientHeight/2; var rel=center-firstTop-ITEM_H/2; return Math.max(0,Math.round(rel/ITEM_H)); }
 function snapToNearest(vp){ snapToIndex(vp,currentIndex(vp)); }
-function snapToIndex(vp,idx,smooth){ if(smooth===undefined) smooth=true; var half=Math.max(1,Math.floor(vp.clientHeight/ITEM_H/2)); var pad=half*ITEM_H; var target=pad+idx*ITEM_H-(vp.clientHeight/2-ITEM_H/2); vp.scrollTo({top:target,behavior:smooth?'smooth':'auto'}); highlight(vp,idx); }
-function highlight(vp,forced){ var items=Array.prototype.slice.call(vp.querySelectorAll('.item')); var idx=(forced!==undefined)?forced:currentIndex(vp); items.forEach(function(el,i){ el.classList.toggle('sel',i===idx); }); }
-function readValue(vp,values){ return values[Math.min(values.length-1,currentIndex(vp))]; }
+function snapToIndex(vp,idx,smooth){ if(smooth===undefined) smooth=true; var half=Math.max(1,Math.floor((vp.clientHeight||160)/ITEM_H/2)); var pad=half*ITEM_H; var target=pad+idx*ITEM_H-(vp.clientHeight/2-ITEM_H/2); vp.scrollTo({top:target,behavior:smooth?'smooth':'auto'}); highlight(vp,idx); }
+function highlight(vp,forced){ var items=Array.prototype.slice.call(vp.querySelectorAll('.item')); var idx=(forced!==undefined)?forced:currentIndex(vp); for(var i=0;i<items.length;i++){ items[i].classList.toggle('sel',i===idx); } }
+function readValue(vp,values){ var idx=currentIndex(vp); if(idx<0) idx=0; if(idx>=values.length) idx=values.length-1; return values[idx]; }
 
-/* A2HS (Android) */
-var deferredPrompt=null; var a2hsBtn=$('#btnA2HS');
-window.addEventListener('beforeinstallprompt',function(e){ e.preventDefault(); deferredPrompt=e; a2hsBtn.style.display='block'; });
-a2hsBtn.addEventListener('click',async function(){ if(!deferredPrompt) return; a2hsBtn.style.display='none'; deferredPrompt.prompt(); try{ var c=await deferredPrompt.userChoice; toast(c.outcome==='accepted'?'Installiert':'Installation abgebrochen'); }catch(_){ } deferredPrompt=null; });
-window.addEventListener('appinstalled',function(){ toast('ParkWecker installiert'); a2hsBtn.style.display='none'; deferredPrompt=null; });
-
-/* Service Worker – nur der richtige Name */
-async function registerSW(){
-  if(!('serviceWorker' in navigator)) return;
-  try{
-    var reg=await navigator.serviceWorker.register('./service-worker.js');
-    console.log('[SW] registriert', reg);
-  }catch(err){
-    console.warn('[SW] Registrierung fehlgeschlagen', err);
-  }
+/* ===== A2HS & SW ===== */
+var deferredPrompt=null; var a2hsBtn;
+function setupA2HS(){
+  a2hsBtn=$('#btnA2HS');
+  window.addEventListener('beforeinstallprompt',function(e){ e.preventDefault(); deferredPrompt=e; if(a2hsBtn) a2hsBtn.style.display='block'; });
+  if(a2hsBtn) a2hsBtn.addEventListener('click',async function(){ if(!deferredPrompt) return; a2hsBtn.style.display='none'; deferredPrompt.prompt(); try{ var c=await deferredPrompt.userChoice; toast(c.outcome==='accepted'?'Installiert':'Installation abgebrochen'); }catch(_){ } deferredPrompt=null; });
+  window.addEventListener('appinstalled',function(){ toast('ParkWecker installiert'); if(a2hsBtn) a2hsBtn.style.display='none'; deferredPrompt=null; });
 }
+async function registerSW(){ if(!('serviceWorker' in navigator)) return; try{ await navigator.serviceWorker.register('./service-worker.js'); }catch(_){ } }
 
-/* Boot */
+/* ===== Boot ===== */
 function boot(){
   try{
-    // Start buttons
+    // Zeit-Buttons
     $$('.start').forEach(function(b){ b.addEventListener('click',function(){ var m=+b.dataset.min; if(m>0) startFlow(m); }); });
 
-    // Wheels
-    hours=Array.from({length:24},function(_,i){return i;});
-    mins =Array.from({length:60},function(_,i){return i;});
-    remVals=[0,5,10,15,20,25];
+    // Scroll-Picker Inhalte
+    hours=[]; for(var i=0;i<24;i++) hours.push(i);
+    mins=[];  for(var j=0;j<60;j++) mins.push(j);
     buildWheel($('#vpH'),hours,0);
     buildWheel($('#vpM'),mins,0);
     var rIdx=Math.max(0,remVals.indexOf(reminderMin)); buildWheel($('#vpR'),remVals,rIdx);
 
-    // Persist reminder
+    // Reminder-Persist
     var vpR=$('#vpR'); var remTO=null;
     function persist(){ if(remTO) clearTimeout(remTO); remTO=setTimeout(function(){ var v=readValue(vpR,remVals); if(v!==reminderMin){ reminderMin=v; saveReminder(v); toast('Erinnerung: '+v+' Min'); } },120); }
-    vpR.addEventListener('scroll',persist); vpR.addEventListener('touchend',persist); vpR.addEventListener('mouseup',persist);
+    if(vpR){ vpR.addEventListener('scroll',persist); vpR.addEventListener('touchend',persist); vpR.addEventListener('mouseup',persist); }
 
-    // Manual start
-    $('#btnManualStart').addEventListener('click',function(){ var h=readValue($('#vpH'),hours); var m=readValue($('#vpM'),mins); var total=h*60+m; if(total<=0){ alert('Bitte eine Parkdauer größer 0 einstellen.'); return; } startFlow(total); });
+    // Manueller Start
+    safeBind('#btnManualStart','click',function(){ var h=readValue($('#vpH'),hours); var m=readValue($('#vpM'),mins); var total=h*60+m; if(total<=0){ alert('Bitte eine Parkdauer größer 0 einstellen.'); return; } startFlow(total); });
 
-    // Header nav
-    $('#brandHome').addEventListener('click',function(){ if(photoWaitActive) return; stopCam(); nav('#screenStart'); });
-    $('#btnTimer').addEventListener('click',function(){ if(photoWaitActive) return; renderTimerUI(); nav('#screenTimer'); });
-    $('#btnHistory').addEventListener('click',function(){ if(photoWaitActive) return; renderHistory(); nav('#screenHistory'); });
-    $('#btnSettings').addEventListener('click',function(){ if(photoWaitActive) return; $('#settingsOverlay').classList.add('show'); $('#togSound').checked=cfg.sound; $('#togVib').checked=cfg.vibrate; highlightAlarmSelection(); });
-    $('#btnCloseSettings').addEventListener('click',function(){ $('#settingsOverlay').classList.remove('show'); });
-    $('#btnNotif').addEventListener('click', async function(){ if('Notification'in window && Notification.permission==='default'){ try{ await Notification.requestPermission(); toast('System-Benachrichtigungen: '+Notification.permission);}catch(_){ } } else { toast('System-Benachrichtigungen: '+(window.Notification?Notification.permission:'nicht verfügbar')); }});
+    // Header Nav
+    safeBind('#brandHome','click',function(){ if(photoWaitActive) return; stopCam(); nav('#screenStart'); });
+    safeBind('#btnTimer','click',function(){ if(photoWaitActive) return; renderTimerUI(); nav('#screenTimer'); });
+    safeBind('#btnHistory','click',function(){ if(photoWaitActive) return; renderHistory(); nav('#screenHistory'); });
+    safeBind('#btnSettings','click',function(){ if(photoWaitActive) return; var ov=$('#settingsOverlay'); if(!ov) return; ov.classList.add('show'); var ts=$('#togSound'), tv=$('#togVib'); if(ts) ts.checked=cfg.sound; if(tv) tv.checked=cfg.vibrate; highlightAlarmSelection(); });
+    safeBind('#btnCloseSettings','click',function(){ var ov=$('#settingsOverlay'); if(ov) ov.classList.remove('show'); });
+    safeBind('#btnNotif','click', async function(){ if('Notification'in window && Notification.permission==='default'){ try{ await Notification.requestPermission(); toast('System-Benachrichtigungen: '+Notification.permission);}catch(_){ } } else { toast('System-Benachrichtigungen: '+(window.Notification?Notification.permission:'nicht verfügbar')); }});
 
-    // Toggles / Alarm-Auswahl & Test
-    $('#togSound').addEventListener('change',function(e){ cfg.sound=!!e.target.checked; saveCfg(); vib(10); });
-    $('#togVib').addEventListener('change',function(e){ cfg.vibrate=!!e.target.checked; saveCfg(); vib(10); });
+    // Settings toggles
+    safeBind('#togSound','change',function(e){ cfg.sound=!!e.target.checked; saveCfg(); vib(10); });
+    safeBind('#togVib','change',function(e){ cfg.vibrate=!!e.target.checked; saveCfg(); vib(10); });
     $$('.alarm-select').forEach(function(btn){ btn.addEventListener('click',function(){ cfg.alarmType=parseInt(btn.dataset.type,10)||2; saveCfg(); toast((['','Glocken','Modern','Melodie'][cfg.alarmType])+' gewählt'); highlightAlarmSelection(); vib(10); }); });
     $$('.alarm-test').forEach(function(btn){ btn.addEventListener('click',function(){ var t=parseInt(btn.dataset.type,10)||2; ({1:playBell,2:playModern,3:playMelody}[t]||playModern)(true); vib([30,40,30]); }); });
 
-    // Timer actions
-    $('#btnPlus30').addEventListener('click',function(){ extendTimer(30); });
-    $('#btnPlus60').addEventListener('click',function(){ extendTimer(60); });
-    $('#btnStop').addEventListener('click',function(){ stopTimer(true); });
+    // Timer-Aktionen
+    safeBind('#btnPlus30','click',function(){ extendTimer(30); });
+    safeBind('#btnPlus60','click',function(){ extendTimer(60); });
+    safeBind('#btnStop','click',function(){ stopTimer(true); });
 
-    // Photo actions
-    $('#btnTakePhoto').addEventListener('click',async function(){ if(!stream){ await startCam(); return; } capturePhoto(); });
-    $('#btnRetake').addEventListener('click',async function(){ st.photo=null; saveState(); renderPhoto(); await startCam(); });
-    $('#photoWrap').addEventListener('click',async function(e){ if(['btnTakePhoto','btnRetake','btnSkipPhoto','fileInput'].includes(e.target.id)) return; await startCam(); });
+    // Foto-Aktionen
+    safeBind('#btnTakePhoto','click',async function(){ var v=$('#video'); if(!v || !v.srcObject){ await startCam(); return; } capturePhoto(); });
+    safeBind('#btnRetake','click',async function(){ st.photo=null; saveState(); renderPhoto(); await startCam(); });
+    var pw=$('#photoWrap'); if(pw){ pw.addEventListener('click',async function(e){ var id=(e.target&&e.target.id)||''; if(id==='btnTakePhoto'||id==='btnRetake'||id==='btnSkipPhoto'||id==='fileInput') return; await startCam(); }); }
 
-    // Map & share
-    $('#btnShowMap').addEventListener('click',openMap);
-    $('#btnShare').addEventListener('click',share);
+    // Map & Share
+    safeBind('#btnShowMap','click',openMap);
+    safeBind('#btnShare','click',share);
 
-    // End overlay
-    $('#btnStopAlarm').addEventListener('click',function(){ stopAlarmLoop(); $('#endOverlay').classList.remove('show'); });
-    $('#btnEndOk').addEventListener('click',function(){ stopAlarmLoop(); $('#endOverlay').classList.remove('show'); renderHistory(); nav('#screenHistory'); });
+    // End-Overlay
+    safeBind('#btnStopAlarm','click',function(){ stopAlarmLoop(); var ov=$('#endOverlay'); if(ov) ov.classList.remove('show'); });
+    safeBind('#btnEndOk','click',function(){ stopAlarmLoop(); var ov=$('#endOverlay'); if(ov) ov.classList.remove('show'); renderHistory(); nav('#screenHistory'); });
 
-    // Restore running timer
+    // Laufenden Timer wiederherstellen
     if(st.running){ renderTimerUI(); } else { nav('#screenStart'); }
 
-    // Resize → Wheels neu justieren
-    var rebuild=null; window.addEventListener('resize',function(){ if(rebuild) cancelAnimationFrame(rebuild); rebuild=requestAnimationFrame(function(){ buildWheel($('#vpH'),hours,currentIndex($('#vpH'))); buildWheel($('#vpM'),mins,currentIndex($('#vpM'))); buildWheel($('#vpR'),remVals,remVals.indexOf(reminderMin)); }); });
+    // Haptik
+    document.addEventListener('click',function(e){ if(e.target && e.target.closest && e.target.closest('button')) vib(5); }, {passive:true});
 
-    // Kleine Haptik
-    document.addEventListener('click',function(e){ if(e.target.closest('button')) vib(5); }, {passive:true});
+    // Quick-Start via URL (?quick=30 / 60)
+    try{
+      var params=new URLSearchParams(location.search); var qmin=parseInt(params.get('quick')||''); if(qmin>0){ startFlow(qmin); }
+    }catch(_){}
 
   }catch(err){
-    console.error('Boot-Fehler:', err);
+    console.error('Boot-Fehler:',err);
     toast('Fehler beim Start (Konsole prüfen)');
   }
 }
 function highlightAlarmSelection(){ $$('.alarm-select').forEach(function(b){ var t=parseInt(b.dataset.type,10)||2; b.classList.toggle('primary',t===cfg.alarmType); b.classList.toggle('flat',t!==cfg.alarmType); }); }
-window.addEventListener('load',function(){ boot(); registerSW(); },{once:true});
 
-/* Flow: Standort -> Foto -> Start */
+/* ===== Flow: Standort -> Foto -> Start ===== */
 async function startFlow(minutes){
   if(flowLock) return; flowLock=true;
   try{
-    nav('#screenTimer');
+    nav('#screenTimer'); // Zielseite zuerst zeigen
     var wantLoc=await showPrompt('Standort speichern?','So findest du den Platz direkt auf der Karte.'); if(wantLoc){ await askGeo(); showMapBtn(); }
     var wantPhoto=await showPrompt('Foto vom Parkplatz machen?','Hilft dir, dein Auto schneller wiederzufinden.');
-    if(wantPhoto){ $('#photoWrap').style.display='block'; await startCam(); await waitForPhotoDecision(); stopCam(); } else { st.photo=null; saveState(); renderPhoto(); }
+    if(wantPhoto){ var w=$('#photoWrap'); if(w) w.style.display='block'; await startCam(); await waitForPhotoDecision(); stopCam(); } else { st.photo=null; saveState(); renderPhoto(); }
     startTimer(minutes);
   } finally { flowLock=false; }
 }
 
-/* Utils */
-function dataURLtoBlob(u){ var sp=u.split(','), m=sp[0], d=sp[1]; var mime=m.match(/:(.*?);/)[1]; var bin=atob(d); var arr=new Uint8Array(bin.length); for(var i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i); return new Blob([arr],{type:mime}); }
+/* ===== Init: DOMContentLoaded & Service Worker ===== */
+document.addEventListener('DOMContentLoaded', function(){ boot(); setupA2HS(); registerSW(); });
 
 })();
 </script>
