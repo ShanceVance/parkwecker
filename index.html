@@ -106,7 +106,7 @@ h1.brand-name{font-size:18px; margin:0}
 .start-grid{display:grid; grid-template-columns:1fr; gap:10px; margin-top:2px}
 @media(min-width:420px){ .start-grid{grid-template-columns:repeat(3,1fr)} }
 
-/* START Button (manuell) – breit, uppercase, zentriert */
+/* START Button – breit, uppercase, zentriert */
 #btnManualStart{
   text-transform:uppercase;
   font-size:18px; font-weight:800; letter-spacing:.4px;
@@ -153,7 +153,7 @@ h1.brand-name{font-size:18px; margin:0}
 .ring{ position:relative; width:100%; max-width:520px; margin:0 auto; aspect-ratio:1/1; display:grid; place-items:center; filter: drop-shadow(0 18px 45px rgba(0,0,0,.45)); }
 .ring svg{width:100%; height:100%}
 .ring .shadow-glow{ position:absolute; inset: -10% -10% -10% -10%; background: radial-gradient(closest-side, rgba(124,58,237,.25), transparent 70%); z-index:0; filter: blur(20px); }
-/* Fix: Countdown stets wirklich zentriert */
+/* Countdown immer absolut zentriert (auch nach Alerts) */
 .ring .time{
   position:absolute; width:100%; text-align:center; z-index:2; font-variant-numeric: tabular-nums; letter-spacing:.6px;
   top:50%; left:50%; transform:translate(-50%,-50%);
@@ -163,7 +163,7 @@ h1.brand-name{font-size:18px; margin:0}
 /* Photo */
 .photo-wrap{
   position:relative; border-radius:18px; overflow:hidden; background:#0b0b0b; aspect-ratio:16/9; display:grid; place-items:center;
-  border:1px solid rgba(255,255,255,.12); box-shadow: var(--shadow); backdrop-filter: var(--glass); margin-top:4px;
+  border:1px solid rgba(255,255,255,.12); box-shadow: var(--shadow); backdrop-filter:var(--glass); margin-top:4px;
 }
 .photo-wrap img,.photo-wrap video,.photo-wrap canvas{width:100%; height:100%; object-fit:cover}
 .tap-overlay{ position:absolute; inset:auto 0 0 0; background:linear-gradient(180deg, transparent, rgba(0,0,0,.55)); color:#fff; padding:8px 12px; font-size:13px; text-align:center; opacity:0; transition:opacity .25s ease; pointer-events:none; z-index:2 }
@@ -310,8 +310,8 @@ h1.brand-name{font-size:18px; margin:0}
         <div class="shadow-glow"></div>
         <svg viewBox="0 0 120 120">
           <defs><linearGradient id="gradStroke" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="var(--accent2)"/><stop offset="100%" stop-color="var(--accent1)"/></linearGradient></defs>
-          <circle cx="60" cy="60" r="52" stroke="rgba(255,255,255,.1)" stroke-width="8" fill="none"/>
-          <circle id="progress" cx="60" cy="60" r="52" stroke="url(#gradStroke)" stroke-width="8" stroke-linecap="round" stroke-dasharray="326.7256" stroke-dashoffset="0" fill="none" transform="rotate(-90 60 60)"/>
+        <circle cx="60" cy="60" r="52" stroke="rgba(255,255,255,.1)" stroke-width="8" fill="none"/>
+        <circle id="progress" cx="60" cy="60" r="52" stroke="url(#gradStroke)" stroke-width="8" stroke-linecap="round" stroke-dasharray="326.7256" stroke-dashoffset="0" fill="none" transform="rotate(-90 60 60)"/>
         </svg>
         <div class="time" id="timeBox"><div class="big" id="countdown">00:00:00</div></div>
       </div>
@@ -325,6 +325,7 @@ h1.brand-name{font-size:18px; margin:0}
         <div style="position:absolute; bottom:10px; right:10px; display:flex; gap:8px;">
           <button id="btnTakePhoto" class="chip"><span id="camLabel">Kamera</span></button>
           <button id="btnRetake" class="chip" style="display:none">Neu</button>
+          <button id="btnSkipPhoto" class="chip" style="display:none">Weiter ohne Foto</button>
           <input id="fileInput" type="file" accept="image/*" capture="environment" style="display:none">
         </div>
       </div>
@@ -443,9 +444,9 @@ const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll
 const NOW=()=>Date.now();
 
 /* Keys */
-const K_STATE='pw_state_v7';
-const K_HIST ='pw_hist_v7';
-const K_CFG  ='pw_cfg_v7';
+const K_STATE='pw_state_v8';
+const K_HIST ='pw_hist_v8';
+const K_CFG  ='pw_cfg_v8';
 const K_REM  ='pw_reminder_v1';
 const K_ALARM='pw_alarm_v1'; // 1 Glocken, 2 Modern (default), 3 Melodie
 
@@ -517,9 +518,7 @@ function playBellAlarm(preview=false){
   if(!cfg.sound) return;
   const ctx=createCtx(); if(!ctx) return;
   const len=preview?1.6:2.6;
-  const seq=[
-    {f:261, t:0.00},{f:330, t:0.80},{f:392, t:1.60}
-  ];
+  const seq=[{f:261,t:0.00},{f:330,t:0.80},{f:392,t:1.60}];
   seq.forEach(s=>tone(ctx,{freq:s.f, start:s.t, dur:0.8, type:'sine', attack:0.04, release:0.3, gain:0.20}));
   setTimeout(()=>ctx.close(), (len*1000)+150);
 }
@@ -578,12 +577,17 @@ async function startCam(){
     stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}, audio:false});
     const v=$('#video'); v.srcObject=stream; v.style.display='block'; $('#photo').style.display='none';
     $('#camLabel').textContent='Aufnehmen';
+    $('#btnSkipPhoto').style.display='inline-block'; // Skip anbieten, solange Kamera offen
   }catch(e){
     $('#camLabel').textContent='Foto hochladen';
     $('#fileInput').click();
   }
 }
-function stopCam(){ if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } $('#video').style.display='none'; }
+function stopCam(){
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  $('#video').style.display='none';
+  $('#btnSkipPhoto').style.display='none';
+}
 function capturePhoto(){
   const v=$('#video'); if(!v.srcObject){ startCam(); return; }
   $('#camLabel').innerHTML='<svg viewBox="0 0 50 50" style="width:18px;height:18px;animation:rspin .8s linear infinite"><circle cx="25" cy="25" r="20" stroke="rgba(255,255,255,.3)" stroke-width="6" fill="none"/><path d="M45 25a20 20 0 0 1-20 20" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round"/></svg> Speichere…';
@@ -591,14 +595,21 @@ function capturePhoto(){
   const data=c.toDataURL('image/jpeg',0.9);
   st.photo=data; saveState(); renderPhoto(); stopCam();
   toast('Foto gespeichert'); vib(30);
+  document.dispatchEvent(new CustomEvent('photo-decision',{detail:{status:'saved'}})); // ► Signal für Flow
 }
 $('#fileInput').addEventListener('change', (e)=>{
   const file=e.target.files && e.target.files[0]; if(!file) return;
   const reader=new FileReader();
-  reader.onload=()=>{ st.photo=String(reader.result); saveState(); renderPhoto(); toast('Foto gespeichert'); vib(30); };
+  reader.onload=()=>{ st.photo=String(reader.result); saveState(); renderPhoto(); toast('Foto gespeichert'); vib(30);
+    document.dispatchEvent(new CustomEvent('photo-decision',{detail:{status:'saved'}}));
+  };
   reader.readAsDataURL(file);
 });
-function renderPhoto(){ const img=$('#photo'); if(st.photo){ img.src=st.photo; $('#photoWrap').style.display='block'; $('#btnRetake').style.display='inline-block'; } else { $('#photoWrap').style.display='none'; $('#btnRetake').style.display='none'; } }
+function renderPhoto(){
+  const img=$('#photo');
+  if(st.photo){ img.src=st.photo; $('#photoWrap').style.display='block'; $('#btnRetake').style.display='inline-block'; }
+  else { $('#photoWrap').style.display='none'; $('#btnRetake').style.display='none'; }
+}
 
 /* ===== Location with graceful fallback ===== */
 async function askGeo(){
@@ -619,6 +630,21 @@ function showPrompt(title, text){
     const onNo =()=>{ cleanup(); res(false); };
     $('#promptYes').onclick=onYes; $('#promptNo').onclick=onNo;
     function cleanup(){ $('#promptYes').onclick=null; $('#promptNo').onclick=null; $('#promptOverlay').classList.remove('show'); }
+  });
+}
+
+/* ► Warte auf Foto-Entscheidung (gespeichert oder übersprungen) */
+function waitForPhotoDecision(){
+  return new Promise(res=>{
+    const onDecision = (e)=>{ cleanup(); res(e.detail?.status || 'skipped'); };
+    const onSkip = ()=>{ stopCam(); st.photo=null; saveState(); renderPhoto(); cleanup(); res('skipped'); };
+    function cleanup(){
+      document.removeEventListener('photo-decision', onDecision);
+      $('#btnSkipPhoto').onclick=null;
+      $('#btnSkipPhoto').style.display='none';
+    }
+    document.addEventListener('photo-decision', onDecision, {once:true});
+    $('#btnSkipPhoto').onclick=onSkip;
   });
 }
 
@@ -827,7 +853,7 @@ function createManifestAndSW(){
 
   if('serviceWorker' in navigator && window.isSecureContext){
     const sw=`
-      const CACHE='parkw-v7';
+      const CACHE='parkw-v8';
       const CORE=['./'];
       self.addEventListener('install',e=>{ e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE))); self.skipWaiting(); });
       self.addEventListener('activate',e=>{ e.waitUntil((async()=>{ const ks=await caches.keys(); await Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k))); })()); self.clients.claim(); });
@@ -880,7 +906,7 @@ function boot(){
   // Wheels
   buildAllWheels();
 
-  // Erinnerung persistieren beim Einrasten
+  // Erinnerung persistieren
   const vpR = $('#vpR');
   let remSnapTO=null;
   const persistReminder = ()=>{
@@ -916,7 +942,7 @@ function boot(){
   $('#btnNotif').addEventListener('click',ensureNotif);
 
   // Toggles
-  $('#togSound').addEventListener('change',e=>{ cfg.sound=!!e.target.checked; saveCfg(); vib(10); blip(1000,70); });
+  $('#togSound').addEventListener('change',e=>{ cfg.sound=!!e.target.checked; saveCfg(); vib(10); blip(900,60); });
   $('#togVib').addEventListener('change',e=>{ cfg.vibrate=!!e.target.checked; saveCfg(); vib(10); });
 
   // Alarm selection & preview
@@ -946,7 +972,7 @@ function boot(){
   // Photo actions
   $('#btnTakePhoto').addEventListener('click',async()=>{ if(!stream){ await startCam(); return; } capturePhoto(); });
   $('#btnRetake').addEventListener('click',async()=>{ st.photo=null; saveState(); renderPhoto(); await startCam(); });
-  $('#photoWrap').addEventListener('click',async(e)=>{ if(['btnTakePhoto','btnRetake','fileInput'].includes(e.target.id)) return; await startCam(); });
+  $('#photoWrap').addEventListener('click',async(e)=>{ if(['btnTakePhoto','btnRetake','btnSkipPhoto','fileInput'].includes(e.target.id)) return; await startCam(); });
 
   // Map & share
   $('#btnShowMap').addEventListener('click',openMap);
@@ -986,13 +1012,21 @@ document.addEventListener('click',e=>{ if(e.target.closest('button')) vib(5); },
 async function startFlow(minutes){
   nav('#screenTimer');
 
+  // 1) Foto-Frage
   const wantPhoto = await showPrompt('Foto vom Parkplatz machen?', 'Hilft dir, dein Auto schneller wiederzufinden.');
-  if(wantPhoto){ $('#photoWrap').style.display='block'; await startCam(); toast('Du kannst jederzeit ein Foto machen.'); }
-  else { st.photo=null; saveState(); renderPhoto(); }
+  if(wantPhoto){
+    $('#photoWrap').style.display='block';
+    await startCam(); // 2) Kamera öffnen
+    await waitForPhotoDecision(); // 3) Auf Entscheidung warten (Foto gespeichert ODER „Weiter ohne Foto“)
+  }else{
+    st.photo=null; saveState(); renderPhoto();
+  }
 
+  // 4) Danach Standort-Frage
   const wantLoc = await showPrompt('Standort speichern?', 'So findest du den Platz direkt auf der Karte.');
   if(wantLoc){ await askGeo(); showMapBtn(); }
 
+  // 5) Timer starten
   startTimer(minutes);
 }
 
